@@ -5,24 +5,12 @@ import { Home } from './pages/Home';
 import { Register } from './pages/Register';
 import { Login } from './pages/Login';
 import { Bye } from './pages/Bye';
+import { Header } from './Header';
 
 export const Routes: React.FC = () => {
   return <BrowserRouter>
   <div>
-    <header>
-      <div>
-        <Link to="/">Home</Link>
-      </div>
-      <div>
-        <Link to="/register">Register</Link>
-      </div>
-      <div>
-        <Link to="/login">Login</Link>
-      </div>
-      <div>
-        <Link to="/bye">Bye</Link>
-      </div>
-    </header>
+    <Header></Header>
   </div>
     <Switch>
       <Route exact path="/" component={Home}></Route>
