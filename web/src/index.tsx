@@ -1,18 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import {Routes} from './Routes';
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import reportWebVitals from './reportWebVitals';
 import {ApolloProvider} from '@apollo/react-hooks';
 
 const client = new ApolloClient({
   uri: 'http://localhost:4000/graphql',
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  credentials: 'include'
 })
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <App />
+    <Routes />
   </ApolloProvider>,
   document.getElementById('root')
 );
