@@ -28,7 +28,7 @@ import cors from 'cors';
     app.post('/refresh_token', async(req, res) => {
         const token = req.cookies.jid;
         if(!token) {
-            return res.send({ok: false, accessToken: ''})
+            return res.send({ok: false, accessToken: '', message: 'no token'})
         }
 
         let payload:any = null;
@@ -36,17 +36,17 @@ import cors from 'cors';
             payload = verify(token, process.env.REFRESH_TOKEN_SECRET!);
         } catch(err) {
             console.log(err);
-            return res.send({ok: false, accessToken: ''})
+            return res.send({ok: false, accessToken: '', message: 'token error'})
         }
 
         const user = await User.findOne({id:payload.userId });
 
         if(!user) {
-            return res.send({ok: false, accessToken: ''})
+            return res.send({ok: false, accessToken: '', message: 'no user'})
         }
 
         if(user.tokenVersion !== payload.tokenVersion) {
-            return res.send({ok: false, accessToken: ''})
+            return res.send({ok: false, accessToken: '', message: 'token version error'})
         }
 
         sendRefreshToken(res, createRefreshToken(user))

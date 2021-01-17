@@ -1,19 +1,72 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {Routes} from './Routes';
-import { ApolloClient, InMemoryCache } from '@apollo/client';
+import {App} from './App';
+import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
 import reportWebVitals from './reportWebVitals';
 import {ApolloProvider} from '@apollo/react-hooks';
+import { getAccessToken, setAccessToken } from './accessToken';
+import { TokenRefreshLink } from 'apollo-link-token-refresh';
+import jwtDecode from 'jwt-decode';
+import { setContext } from '@apollo/client/link/context'
+
+const httpLink = new HttpLink({ uri: 'http://localhost:4000/graphql', credentials: 'include' });
+
+const authLink = setContext((_, { headers }) => {
+  const token = getAccessToken()
+
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : '',
+    },
+  }
+})
+
+const tokenRefreshLink = new TokenRefreshLink({
+  accessTokenField: 'accessToken',
+  isTokenValidOrUndefined: () => {
+    const token = getAccessToken()
+
+    if (!token) {
+      return true
+    }
+
+    try {
+      const { exp } : {exp: number} = jwtDecode(token)
+
+      if (Date.now() >= exp * 1000) {
+        return false
+      } else {
+        return true
+      }
+    } catch (e) {
+      console.log('Error here...')
+      return false
+    }
+  },
+  fetchAccessToken: () => {
+    return fetch('http://localhost:4000/refresh_token', {
+      method: 'POST',
+      credentials: 'include',
+    })
+  },
+  handleFetch: (accessToken) => {
+    setAccessToken(accessToken)
+  },
+  handleError: (err) => {
+    console.warn('Your refresh token is invalid. Try to relogin')
+    console.log(err)
+  },
+})
 
 const client = new ApolloClient({
-  uri: 'http://localhost:4000/graphql',
+  link: from([tokenRefreshLink, authLink, httpLink]),
   cache: new InMemoryCache(),
-  credentials: 'include'
 })
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <Routes />
+    <App />
   </ApolloProvider>,
   document.getElementById('root')
 );
