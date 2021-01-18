@@ -1,18 +1,20 @@
 import "reflect-metadata";
 import 'dotenv/config';
 import express from 'express';
-import {ApolloServer} from 'apollo-server-express';
+import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from "type-graphql";
 import { UserResolver } from "./UserResolver";
 import { createConnection } from "typeorm";
 import cookieParser from 'cookie-parser';
 import { verify } from "jsonwebtoken";
 import { createAccessToken, createRefreshToken } from "./auth";
-import {User} from './entity/User';
+import { User } from './entity/User';
 import { sendRefreshToken } from "./sendRefreshToken";
 import cors from 'cors';
 
 (async () => {
+
+    // Express Setup
     const app = express();
     app.use(cors(
         {
@@ -21,69 +23,56 @@ import cors from 'cors';
         }
     ));
     app.use(cookieParser());
-    app.get('/', (_, res) => {
-        res.send('hello')
-    })
 
-    app.post('/refresh_token', async(req, res) => {
+    // POST endpoint to refresh token 
+    app.post('/refresh_token', async (req, res) => {
         const token = req.cookies.jid;
-        if(!token) {
-            return res.send({ok: false, accessToken: '', message: 'no token'})
+
+        // Return false if no cookies exist
+        if (!token) {
+            return res.send({ ok: false, accessToken: '', message: 'no token' })
         }
 
-        let payload:any = null;
+        // Return false if token does not include REFRESH_TOKEN_SECRET
+        let payload: any = null;
         try {
             payload = verify(token, process.env.REFRESH_TOKEN_SECRET!);
-        } catch(err) {
+        } catch (err) {
             console.log(err);
-            return res.send({ok: false, accessToken: '', message: 'token error'})
+            return res.send({ ok: false, accessToken: '', message: 'token error' })
         }
 
-        const user = await User.findOne({id:payload.userId });
+        const user = await User.findOne({ id: payload.userId });
 
-        if(!user) {
-            return res.send({ok: false, accessToken: '', message: 'no user'})
+        // Return false if user doesn't exist
+        if (!user) {
+            return res.send({ ok: false, accessToken: '', message: 'no user' })
         }
 
-        if(user.tokenVersion !== payload.tokenVersion) {
-            return res.send({ok: false, accessToken: '', message: 'token version error'})
+        // Return false if the token version doesn't match
+        if (user.tokenVersion !== payload.tokenVersion) {
+            return res.send({ ok: false, accessToken: '', message: 'token version error' })
         }
 
         sendRefreshToken(res, createRefreshToken(user))
 
-        return res.send({ok: true, accessToken: createAccessToken(user)});
+        return res.send({ ok: true, accessToken: createAccessToken(user) });
     })
 
     await createConnection();
 
+    // Include the resolver in Apollo Server and pass express res and req as context
     const apolloServer = new ApolloServer({
         schema: await buildSchema({
             resolvers: [UserResolver]
         }),
-        context: ({req,res}) => ({req,res})
+        context: ({ req, res }) => ({ req, res })
     })
 
-    apolloServer.applyMiddleware({app, cors: false})
+    apolloServer.applyMiddleware({ app, cors: false })
 
+    // Express Listen
     app.listen(4000, () => {
         console.log("express server has started")
     })
 })()
-
-// createConnection().then(async connection => {
-
-//     console.log("Inserting a new user into the database...");
-//     const user = new User();
-//     user.firstName = "Timber";
-//     user.lastName = "Saw";
-//     user.age = 25;
-//     await connection.manager.save(user);
-//     console.log("Saved a new user with id: " + user.id);
-
-//     console.log("Loading users from the database...");
-//     const users = await connection.manager.find(User);
-//     console.log("Loaded users: ", users);
-
-//     console.log("Here you can setup and run express/koa/any other framework.");
-
-// }).catch(error => console.log(error));

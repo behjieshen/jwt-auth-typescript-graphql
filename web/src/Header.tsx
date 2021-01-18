@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLogoutMutation, useMeQuery } from './generated/graphql';
 import { setAccessToken } from './accessToken';
-import { error } from 'console';
 
 interface HeaderProps {}
 

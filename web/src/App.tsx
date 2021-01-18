@@ -8,15 +8,13 @@ export const App: React.FC<AppProps> = ({}) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/refresh_token', { 
-        credentials: 'include', 
-        method: 'POST' 
+    fetch('http://localhost:4000/refresh_token', {
+      credentials: 'include',
+      method: 'POST',
     }).then(async (x) => {
-        const {accessToken} = await x.json();
-        console.log(accessToken);
-        console.log('================')
-        setAccessToken(accessToken);
-        setLoading(false);
+      const { accessToken } = await x.json();
+      setAccessToken(accessToken);
+      setLoading(false);
     });
   }, []);
 
